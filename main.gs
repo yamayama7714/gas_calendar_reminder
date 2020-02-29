@@ -28,11 +28,10 @@ function getCalenderOption() {
 function setReminder() {
   
   try  {
+    // スプシ入力済みの値のエラーチェック
     const err = validCheck();
     if (err == Error) { throw new Error("C2,D2,E2セルの何れかに不適切な記号が入力されているか\nC4,D4,E4の何れかに不適切な数値が入力されています。") };
     const data = getCalenderOption();
-//    if (!data.mail) { throw new Error("メールアドレスが入力されていません。ご自身のメールアドレスを入力してください。") };
-    //引数は文字列。個人スプシのA2等の固定セルから取得。
     const myCal = CalendarApp.getCalendarById(data.mail);
     
     //向こう一週間のイベントリスト
