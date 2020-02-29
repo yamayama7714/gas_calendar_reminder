@@ -29,6 +29,7 @@ function onEdit(e) {
 }
 
 function validCheck() {
+  // setReminderを起動時に実行。エラー（スプシへの不正な値の入力）があったら、setReminder内部でそれを通知するメールを自分に送信する
     let output = true;
     const sh = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     const strs = sh.getRange('C2:E2').getValues();
