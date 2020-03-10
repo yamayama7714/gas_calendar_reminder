@@ -96,27 +96,27 @@ function setReminder() {
     
         Logger.log("**********定期イベントには送信しない**********")
         myEvents.forEach(mev => {    
-        // 参加状況,タイトル
-        const status = mev.getMyStatus();
-        const title = mev.getTitle();
-        Logger.log(title);
+          // 参加状況,タイトル
+          const status = mev.getMyStatus();
+          const title = mev.getTitle();
+          Logger.log(title);
         
-        if (reg1.test(title) || reg2.test(title) || reg3.test(title)) {
-          // 参加拒否以外に送信
-          const beforeMin = (reg1.test(title)) ? data.str1[1]
-                          : (reg2.test(title)) ? data.str2[1]
-                          : (reg3.test(title)) ? data.str3[1]
-                          : 30;
+          if (reg1.test(title) || reg2.test(title) || reg3.test(title)) {
+            // 参加拒否以外に送信
+            const beforeMin = (reg1.test(title)) ? data.str1[1]
+                            : (reg2.test(title)) ? data.str2[1]
+                            : (reg3.test(title)) ? data.str3[1]
+                            : 30;
 
           // 参加拒否でない、かつ、定期予定でない(isReccuringEvent()==false)にのみ送信         
-          if (status != CalendarApp.GuestStatus.NO && mev.isRecurringEvent() == false) {
+            if (status != CalendarApp.GuestStatus.NO && mev.isRecurringEvent() == false) {
               mev.addEmailReminder(beforeMin);
               Logger.log("送信したイベントのタイトル：" + title);
               Logger.log("リマインドメール送信タイミング" + beforeMin + "分前");
-          };
-          Logger.log("****************一巡****************");
-        } 
-      })
+            };
+           Logger.log("****************一巡****************");
+          } 
+        })
         
         break;
   
