@@ -7,16 +7,16 @@ https://docs.google.com/presentation/d/1HwuOPFMc7HEpGViNZe_yPtayH1P7OJSqjQLgaOsN
 function getCalenderOption() {
   // スプシから各種設定情報を取得
   const sh = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sh.getRange("B2:E2").getValues();
-  const beforeMin = sh.getRange("C4:E4").getValues(); // 送信時間 
+  const data = sh.getRange("C2:E2").getDisplayValues(); //通知したいイベントに含まれる文字列。数字のみでも可。日付等は後で弾く
+  const beforeMin = sh.getRange("C4:E4").getValues(); // 何分前に通知するか
   const mail = Session.getActiveUser().getEmail(); // メアドは入力不要
   
   const dataObj = {
     mail : mail,
-    rec : data[0][0],
-    str1 : [data[0][1], beforeMin[0][0]],
-    str2 : [data[0][2], beforeMin[0][1]],
-    str3 : [data[0][3], beforeMin[0][2]]
+    rec  : sh.getRange("B2").getValue(), //boolean
+    str1 : [data[0][0], beforeMin[0][0]],
+    str2 : [data[0][1], beforeMin[0][1]],
+    str3 : [data[0][2], beforeMin[0][2]]
   }; 
   Logger.log(dataObj);
   //  Logger.log(dataObj.str2[1]);
@@ -30,99 +30,58 @@ function setReminder() {
   try  {
     // スプシ入力済みの値のエラーチェック
     const err = validCheck();
-    if (err == Error) { throw new Error("C2,D2,E2セルの何れかに不適切な記号が入力されているか\nC4,D4,E4の何れかに不適切な数値が入力されています。") };
+    if (err != true) { throw new Error(err) };
     const data = getCalenderOption();
     const myCal = CalendarApp.getCalendarById(data.mail);
     
     //向こう一週間のイベントリスト
-    const startTime = new Date();
+    const date = new Date();
+    const startTime = new Date(date.getFullYear(),date.getMonth(), date.getDate(), 0, 0, 0);
     const oneWeekAgo = new Date(startTime.getTime() + (7 * 24 * 60 * 60 * 1000));
     const myEvents = myCal.getEvents(startTime, oneWeekAgo);
-    //  当日のみ：const myEvents = myCal.getEventsForDay(new Date());
     if (!myEvents || myEvents.length === 0) { throw new Error("カレンダーに予定がありません…！もしかしたら、良いことかもしれませんね。") };
     
     // 定期イベントについて、送信するか否か(bool)。
     const recur = data.rec;
-    Logger.log(recur);
+    if (typeof recur != "boolean") { throw new Error("B2セルの形式が不適切と考えられます。B2セルはチェックボックスにしてください。\nB2セルをアクティブにした後、メニューバーの「挿入」から「チェックボックス」をクリックしてください。"); }
     
-    // C2D2E2セルのうち何れかが空欄の場合、全ての予定に通知が送信されてしまう。
-    // false,null,undefined,""等では対処できなかったため、不本意ではあるがユーザが使用することは有り得ないであろう正規表現を生成
-    // これらの正規表現はtestメソッドで使用します
-    const reg1 = (!data.str1[0]) ? new RegExp("/\/\/\/\/\/\/\/\/\a/") : new RegExp(data.str1[0]);
-    const reg2 = (!data.str2[0]) ? new RegExp("/\/\/\/\/\/\/\/\/\a/") : new RegExp(data.str2[0]);
-    const reg3 = (!data.str3[0]) ? new RegExp("/\/\/\/\/\/\/\/\/\a/") : new RegExp(data.str3[0]);
-    //  Logger.log(reg1)
-    //  Logger.log(reg2)
-    //  Logger.log(reg3)
-    
-    switch (recur) {
-      case true :
-        
-      Logger.log("**********定期イベントにも送信する**********")
-      
-      /*************************************************************************************************
-      //なぜswitchなのか
-      //本来は、recurの値（bool,定期予定か否か)に応じて呼び出すメソッドを変える、ようにしたほうがよいのかもしれません。
-      //しかしその場合、実行時間が3倍くらいになります…呼び出す関数が増えるとGASは基本長引きます
-      //単に視認性を向上させて行数を削減するのならば、1つのforEachの中で都度recurを判断させるのも手ですし、仕様上？速度も早いのですが、recurは不変の定数であり、都度条件判断させる必要はありません。
-      //どうしようもないので、この書き方です。
-      **************************************************************************************************/
-      
-      myEvents.forEach(mev => {    
-        // 参加状況,タイトル
-        const status = mev.getMyStatus();
-        const title = mev.getTitle();
-        
-        // 現在参照中のイベントmevのタイトルの中に指定文字列reg1~3が含まれていれば、そのイベントには通知メールを送信
-        if (reg1.test(title) || reg2.test(title) || reg3.test(title)) {
-          // 指定文字列reg1=data.str[0]が含まれていたら、その文字列に応じた指定待ち時間=data.str[1]をbeforeMinに代入
-          const beforeMin = (reg1.test(title)) ? data.str1[1]
-                          : (reg2.test(title)) ? data.str2[1]
-                          : (reg3.test(title)) ? data.str3[1]
-                          : 30;
-          // 参加拒否以外に送信
-          if (status != CalendarApp.GuestStatus.NO){
-            mev.addEmailReminder(beforeMin);
-            Logger.log("送信したイベントのタイトル：" + title);
-            Logger.log("リマインドメール送信タイミング: " + beforeMin + "分前");     
-          };
-          Logger.log("****************一巡****************");
-        };
-      });
-        
-        break;
-        
-      case false:
-    
-        Logger.log("**********定期イベントには送信しない**********")
-        myEvents.forEach(mev => {    
-          // 参加状況,タイトル
-          const status = mev.getMyStatus();
-          const title = mev.getTitle();
-          Logger.log(title);
-        
-          if (reg1.test(title) || reg2.test(title) || reg3.test(title)) {
-            // 参加拒否以外に送信
-            const beforeMin = (reg1.test(title)) ? data.str1[1]
-                            : (reg2.test(title)) ? data.str2[1]
-                            : (reg3.test(title)) ? data.str3[1]
-                            : 30;
+    //data.strXは[送信対象,通知時間]の配列。何れか片方が空白なものは除外
+    const sendTargetTitles = [data.str1, data.str2, data.str3].filter(ds => { return  !!ds[0] && !!ds[1] });
+    Logger.log(sendTargetTitles);
 
-          // 参加拒否でない、かつ、定期予定でない(isReccuringEvent()==false)にのみ送信         
-            if (status != CalendarApp.GuestStatus.NO && mev.isRecurringEvent() == false) {
-              mev.addEmailReminder(beforeMin);
-              Logger.log("送信したイベントのタイトル：" + title);
-              Logger.log("リマインドメール送信タイミング" + beforeMin + "分前");
-            };
-           Logger.log("****************一巡****************");
-          } 
-        })
-        
-        break;
-  
-      default:
-        throw new Error("B2セルの形式が不適切と考えられます。B2セルはチェックボックスにしてください。\nB2セルをアクティブにした後、メニューバーの「挿入」から「チェックボックス」をクリックしてください。");
-    };
+    //送信対象を抽出する　（不参加でない　かつ　送信対象予定の文字列を含む）
+    let sendEvents;
+    
+    if (recur == true) {
+    // 定期予定を含む　イベントを抽出
+      console.log("定期予定を含む")
+      sendEvents = myEvents.filter(mev => { 
+        return mev.getMyStatus() != CalendarApp.GuestStatus.NO && // 不参加でない
+        sendTargetTitles.some(st => mev.getTitle().includes(st[0])) //送信対象予定の文字列を抽出
+      });
+    } else {
+    // 定期予定を含まない　イベントを抽出
+      console.log("定期予定を除外")
+      sendEvents = myEvents.filter(mev => { 
+        return mev.getMyStatus() != CalendarApp.GuestStatus.NO &&
+        mev.isRecurringEvent() === false && //定期予定ではないものを抽出
+        sendTargetTitles.some(st => mev.getTitle().includes(st[0])) 
+      });
+    }
+    
+    // 送信対象イベントのみに送信する
+    sendEvents.forEach(se => {
+      let beforeMin; //通知を送信する時間のこと（何分前に通知するかの「分」のこと。HH:mm:ssのmm）
+      
+      for(const stTitle of sendTargetTitles) { //紐付いている通知を送信する時間を取得
+        if (se.getTitle().includes(stTitle[0])) {
+          beforeMin = stTitle[1];
+          break;
+        };
+      }
+      se.addEmailReminder(beforeMin); // 通知送信
+      Logger.log(beforeMin)
+    });
     
    } catch(e) { 
      errorMail(Session.getActiveUser().getEmail(),e);
@@ -130,7 +89,7 @@ function setReminder() {
 //     Browser.msgBox(e);
   }
     
-
+  console.log("完走！")
 }
 
 function errorMail(mail,errMsg) {  
@@ -146,5 +105,52 @@ function errorMail(mail,errMsg) {
     }
   );
 };
+
+function validCheck() {
+  // setReminderを起動時に実行。エラー（スプシへの不正な値の入力）があったら、setReminder内部でそれを通知するメールを自分に送信する
+    let output = true;
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const strs = sh.getRange('C2:E2').getValues();
+    const mins = sh.getRange('C4:E4').getValues();
+    const cols = ["C", "D", "E"]; //エラーメールにセル位置を書きたい
+    const baseMsg = "エラー：  "
+//    const datas = strs[0].concat(mins[0]);
+//    Logger.log(datas);
+    
+    let cnt = 0;
+    let row;
+    let cellName;
+    //2行目について、エラーチェック&エラーメッセを積み上げ
+
+    for (const str of strs[0]) {
+      row = 2;
+      cellName = cols[cnt] + row + "セル";
+      
+      if ( !(typeof str === "string" || typeof str === "number") ) {
+        output += baseMsg + cellName + "および2行目には文字列または数字を入力してください。\n";
+      } else if  ((typeof str === "string" || typeof str === "number") && String(str).length < 3 && String(str) !== "") {
+        output += baseMsg + cellName + "に入力された文字数が短すぎます。" + row + "行目は3文字以上で入力してください。\n";
+      }
+      cnt += 1;
+    }
+    
+    cnt = 0;
+    //4行目について、エラーチェック&エラーメッセを積み上げ
+    for (const min of mins[0]) {
+      row = 4;
+      cellName = cols[cnt] + row + "セル";
+      
+      if (min !== "" && typeof min !== "number") {
+        output += baseMsg + cellName +  "には数字を入力してください。\n";
+      } else if (min !== "" && typeof min === "number" && (min > 40320 || 5 > min) ) {
+        output += baseMsg + "指定した通知時間は無効です。" + cellName + "および" + row + "行目の数値は5～40320(分)で指定してください。\n";
+      }
+      cnt += 1;
+    }
+    
+    if (output != true) {output = output.slice(4)}; // エラーが存在すると、頭4文字に"true"が含まれてしまう
+    Logger.log(output);  
+    return output;
+}
 
 
