@@ -71,6 +71,7 @@ function setReminder() {
 
     // 送信対象イベントのみに送信する
     sendEvents.forEach(sendEvent => {
+    // 通知を送信する時間のこと（何分前に通知するかの「分」のこと。HH:mm:ssのmm）
       const beforeMin = sendTargetTitles.filter(st => { return sendEvent.getTitle().includes(st[0]) });
       sendEvent.addEmailReminder(beforeMin[0][1]); // 通知送信
     });
