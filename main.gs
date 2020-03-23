@@ -30,34 +30,34 @@ function setReminder() {
   try  {
     // スプシ入力済みの値のエラーチェック
     const err = validCheck();
-    if (err != true) { throw new Error(err) };
+    if (typeof err !== "boolean") { throw new Error(err) };
     const data = getCalenderOption();
     const myCal = CalendarApp.getCalendarById(data.mail);
     
-    //向こう一週間のイベントリスト
+    //向こう4週間のイベントリスト
     const date = new Date();
     const startTime = new Date(date.getFullYear(),date.getMonth(), date.getDate(), 0, 0, 0);
-    const oneWeekAgo = new Date(startTime.getTime() + (7 * 24 * 60 * 60 * 1000));
-    const myEvents = myCal.getEvents(startTime, oneWeekAgo);
+    const in4weeks = new Date(startTime.getTime() + (28 * 24 * 60 * 60 * 1000));
+    const myEvents = myCal.getEvents(startTime, in4weeks);
     if (!myEvents || myEvents.length === 0) { throw new Error("カレンダーに予定がありません…！もしかしたら、良いことかもしれませんね。") };
     
     // 定期イベントについて、送信するか否か(bool)。
     const recur = data.rec;
-    if (typeof recur != "boolean") { throw new Error("B2セルの形式が不適切と考えられます。B2セルはチェックボックスにしてください。\nB2セルをアクティブにした後、メニューバーの「挿入」から「チェックボックス」をクリックしてください。"); }
+    if (typeof recur !== "boolean") { throw new Error("B2セルの形式が不適切と考えられます。B2セルはチェックボックスにしてください。\nB2セルをアクティブにした後、メニューバーの「挿入」から「チェックボックス」をクリックしてください。"); }
     
     //data.strXは[送信対象,通知時間]の配列。何れか片方が空白なものは除外
-    const sendTargetTitles = [data.str1, data.str2, data.str3].filter(ds => { return  !!ds[0] && !!ds[1] });
+    const sendTargetTitles = [data.str1, data.str2, data.str3].filter(ds => { return  ds[0] && ds[1] });
     Logger.log(sendTargetTitles);
 
-    //送信対象を抽出する　（不参加でない　かつ　送信対象予定の文字列を含む）
+    //送信対象を抽出する　（不参加でない　かつ　イベント（カレンダーの予定）タイトルにスプシで指定した文字列を含む）
     let sendEvents;
     
-    if (recur == true) {
+    if (recur) {
     // 定期予定を含む　イベントを抽出
       console.log("定期予定を含む")
       sendEvents = myEvents.filter(mev => { 
-        return mev.getMyStatus() != CalendarApp.GuestStatus.NO && // 不参加でない
-        sendTargetTitles.some(st => mev.getTitle().includes(st[0])) //送信対象予定の文字列を抽出
+        return mev.getMyStatus() !== CalendarApp.GuestStatus.NO && // 不参加でない
+        sendTargetTitles.some(st => mev.getTitle().includes(st[0])) //イベント（カレンダーの予定）のタイトルに指定文字列が存在する
       });
     } else {
     // 定期予定を含まない　イベントを抽出
@@ -68,19 +68,11 @@ function setReminder() {
         sendTargetTitles.some(st => mev.getTitle().includes(st[0])) 
       });
     }
-    
+
     // 送信対象イベントのみに送信する
-    sendEvents.forEach(se => {
-      let beforeMin; //通知を送信する時間のこと（何分前に通知するかの「分」のこと。HH:mm:ssのmm）
-      
-      for(const stTitle of sendTargetTitles) { //紐付いている通知を送信する時間を取得
-        if (se.getTitle().includes(stTitle[0])) {
-          beforeMin = stTitle[1];
-          break;
-        };
-      }
-      se.addEmailReminder(beforeMin); // 通知送信
-      Logger.log(beforeMin)
+    sendEvents.forEach(sendEvent => {
+      const beforeMin = sendTargetTitles.filter(st => { return sendEvent.getTitle().includes(st[0]) });
+      sendEvent.addEmailReminder(beforeMin[0][1]); // 通知送信
     });
     
    } catch(e) { 
