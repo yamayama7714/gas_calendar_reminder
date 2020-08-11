@@ -18,6 +18,9 @@ function onEdit(e) {
       Browser.msgBox("入力された数字（分）が適切ではないか、数字以外が入力されています。\nB3セルを参照してください");
     }
     
+    if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && parseInt(cell) % 5 !== 0) {
+      Browser.msgBox("入力された数字（分）は5の倍数ではありません。\n5の倍数を入力してください。");
+    }
     // B2セルが破壊されていないか
     if (range.getRow() === 2 && range.getColumn() === 2 && typeof cell != "boolean" ) {
       Browser.msgBox("B2セルは、チェックボックスである必要があります。");
@@ -29,8 +32,11 @@ function onEdit(e) {
   }
 };
 
+
+/***********************************************************************************
+main.gsのsetReminder()を起動時に実行。スプシに不正な値が入力がされていたら、setReminderのtryを終了し、エラーを通知するメールを自分に送信する
+***********************************************************************************/
 function validCheck() {
-  // setReminderを起動時に実行。エラー（スプシへの不正な値の入力）があったら、setReminderのtryを終了し、エラーを通知するメールを自分に送信する
     let erMsg = "";
 
     const sh = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -57,7 +63,7 @@ function validCheck() {
     for (const row of rows) {
         let cnt = 0;
 
-        for (let col of row.rowRange) {
+        for (const col of row.rowRange) {
             const cellName = cols[cnt] + row.rowNum + "セル";
 
             if (row.rowNum === 2) {
@@ -71,8 +77,10 @@ function validCheck() {
                 if (col !== "" && typeof col !== "number") {
                   erMsg += baseMsg + cellName +  "には数字を入力してください。\n";
                 } else if (col !== "" && typeof col === "number" && (col > 40320 || 5 > col) ) {
-                  erMsg += baseMsg + "指定した通知時間は無効です。" + cellName + "および" + row.rowNum + "行目の数値は5～40320(分)で指定してください。\n";
+                  erMsg += baseMsg + "指定された通知時間「" + col + "」は無効です。" + cellName + "および" + row.rowNum + "行目の数値は5～40320(分)の間で、5の倍数を指定してください。\n";
                 };
+                
+                if (col % 5 !== 0) erMsg += baseMsg + "指定された通知時間「" + col + "」は無効です。" + cellName + "および" + row.rowNum + "行目の数値は、5の倍数を指定してください。\n";
             };
             cnt += 1;
         };
