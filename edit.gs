@@ -15,7 +15,7 @@ function onEdit(e) {
     
     // 不正な時間（分）が指定されていないか
     if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && ((cell > 40320 || 5 > cell ) || (typeof cell !== "number"))) {
-      Browser.msgBox("入力された数字（分）が適切ではないか、数字以外が入力されています。\nB3セルを参照してください");
+      Browser.msgBox("入力された数字（分）が適切ではないか、数字以外が入力されています。\nB4セルを参照してください");
     }
     
     if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && parseInt(cell) % 5 !== 0) {
