@@ -1,29 +1,32 @@
 /***********************************************************************************
-不正な入力に対する警告を表示（表示するだけ。入力値が不正のままである場合はvalidCheck()によって対処
+不正な入力に対する警告を表示（表示するだけ。入力値が不正のままである場合はvalidCheck()やsetReminder内部のthrowによって対処
 ***********************************************************************************/
 function onEdit(e) {
  
   try {
 //    const sh = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     const range = e.range;
-    const cell = range.getValue();    
+    const cell = range.getValue();
     
-    // 指定文字列が短すぎないか。
     if (range.getRow() === 2 && range.getColumn() > 2 && !!cell) { //!!cellは cell !== ""のこと。セルを空白にした際にメッセが表示される事を回避するため、必要
-      if (String(cell).length < 3 ) { Browser.msgBox("文字数が短すぎます。\n3文字以上で入力してください。") } ;
+      if (String(cell).length < 3 ) { Browser.msgBox("文字数が短すぎるようです。\\n3文字以上の入力をお願いいたします。") } ;
     }
     
-    // 不正な時間（分）が指定されていないか
     if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && ((cell > 40320 || 5 > cell ) || (typeof cell !== "number"))) {
-      Browser.msgBox("入力された数字（分）が適切ではないか、数字以外が入力されています。\nB4セルを参照してください");
-    }
+      Browser.msgBox("入力された数字（分）が適切ではないか、数字以外が入力されています。\\n5~40320の数字を参照してください");
+    };
     
     if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && parseInt(cell) % 5 !== 0) {
-      Browser.msgBox("入力された数字（分）は5の倍数ではありません。\n5の倍数を入力してください。");
-    }
-    // B2セルが破壊されていないか
+      Browser.msgBox("入力された数字（分）は5の倍数ではありません。\\n5の倍数を入力してください。");
+    };
+    
     if (range.getRow() === 2 && range.getColumn() === 2 && typeof cell != "boolean" ) {
       Browser.msgBox("B2セルは、チェックボックスである必要があります。");
+    };
+    
+    if (range.getRow() === 4 && range.getColumn() === 2 && Object.prototype.toString.call(cell) !== '[object Date]') {
+      Logger.log("a");
+      Browser.msgBox("B4セルには時間が入力されている必要があります。\\n入力例: 8:00");
     };
       
   } catch(e) {
@@ -34,7 +37,10 @@ function onEdit(e) {
 
 
 /***********************************************************************************
-main.gsのsetReminder()を起動時に実行。スプシに不正な値が入力がされていたら、setReminderのtryを終了し、エラーを通知するメールを自分に送信する
+main.gsのsetReminder()を起動時に実行。スプシの一部（下記）に不正な値が入力がされていたら、setReminderのtryを終了し、エラーを通知するメールを自分に送信する
+・2,4行目
+・C~E列
+※他のセルの値のエラーはsetReminder内部で都度throwしている
 ***********************************************************************************/
 function validCheck() {
     let erMsg = "";
