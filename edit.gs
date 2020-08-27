@@ -9,24 +9,31 @@ function onEdit(e) {
     const cell = range.getValue();
     
     if (range.getRow() === 2 && range.getColumn() > 2 && !!cell) { //!!cellは cell !== ""のこと。セルを空白にした際にメッセが表示される事を回避するため、必要
-      if (String(cell).length < 3 ) { Browser.msgBox("文字数が短すぎるようです。\\n3文字以上の入力をお願いいたします。") } ;
+      if (String(cell).length < 3 ) { 
+        Browser.msgBox("文字数が短すぎるようです。\\n3文字以上の入力をお願いいたします。");
+        range.clearContent();
+      } ;
     }
     
     if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && ((cell > 40320 || 5 > cell ) || (typeof cell !== "number"))) {
       Browser.msgBox("入力された数字（分）が適切ではないか、数字以外が入力されています。\\n5~40320の数字を参照してください");
+      range.clearContent();
     };
     
     if (range.getRow() === 4 && range.getColumn() > 2 && !!cell && parseInt(cell) % 5 !== 0) {
       Browser.msgBox("入力された数字（分）は5の倍数ではありません。\\n5の倍数を入力してください。");
+      range.clearContent();
     };
     
     if (range.getRow() === 2 && range.getColumn() === 2 && typeof cell != "boolean" ) {
       Browser.msgBox("B2セルは、チェックボックスである必要があります。");
+      range.insertCheckboxes();
     };
     
     if (range.getRow() === 4 && range.getColumn() === 2 && Object.prototype.toString.call(cell) !== '[object Date]') {
       Logger.log("a");
       Browser.msgBox("B4セルには時間が入力されている必要があります。\\n入力例: 8:00");
+      range.clearContent();
     };
       
   } catch(e) {
