@@ -100,13 +100,19 @@ function setTrigger(runDate, isAuto) {
     };
      
     if (!isAuto) runDate = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange("B4").getValue();
-    const setTime = new Date();
-    setTime.setHours(runDate.getHours());
-    setTime.setMinutes(runDate.getMinutes());
-
-    if (new Date().getTime() > setTime.getTime()) {
-      setTime.setDate(setTime.getDate() + 1);
-    };
+    const setTime = (() => {
+      const date = new Date();
+      date.setHours(runDate.getHours());
+      date.setMinutes(runDate.getMinutes());
+      Logger.log(date);
+      if (new Date().getTime() >= date.getTime()) {
+        return new Date(date.setDate(date.getDate() + 1));
+      } else {
+        return date;
+      }
+    })();
+    Logger.log("***newTrig")
+    Logger.log(setTime);
     ScriptApp.newTrigger('setReminder').timeBased().at(setTime).create();
     
     // 手動実行時は案内メッセ
@@ -156,7 +162,7 @@ function sendErrorMailToMe(meMailAd, errMsg) {
 // 説明を表示
 function showQuickManual() {
   const msg = "ご利用ありがとうございます。\\n\\n"
-  + "■これは何？「Googleカレンダーの予定のうち、任意の文字が含まれる予定の開始X分前に、通知メールを送信するプログラムです」"
+  + "■これは何？「向こう4週間以内のGoogleカレンダーの予定のうち、任意の文字が含まれる予定の開始X分前に、通知メールを送信するプログラムです」"
   + "※X分は、4行目C~E列に入力された時間となります。\\n\\n"
   + "■使い方は？　このスプシをコピー後、A列のボタンを押すと使えます。\\n\\n"
   + "■ボタンの説明\\n"
